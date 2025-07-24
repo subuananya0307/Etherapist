@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "50671662761",
+    "project_id": "etherapist-275bc",
+    "storage_bucket": "etherapist-275bc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50671662761:android:10b177e11d6b5c35395bb8",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYUVgHcPacI13CCJlt-N9q8VKIBxNoMro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

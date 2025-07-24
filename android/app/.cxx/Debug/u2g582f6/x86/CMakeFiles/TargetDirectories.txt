@@ -1,0 +1,2 @@
+C:/Users/sri/StudioProjects/eTherapist/android/app/.cxx/Debug/u2g582f6/x86/CMakeFiles/edit_cache.dir
+C:/Users/sri/StudioProjects/eTherapist/android/app/.cxx/Debug/u2g582f6/x86/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced VR Interview Environment</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+
+    <style>
+        /* Default Styles (for larger screens) */
+        .ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px;
+            border-radius: 10px;
+            font-size: 8px;
+            font-family: Arial, sans-serif;
+            max-width: 200px;
+            max-height: 80vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #4CAF50 rgba(0, 0, 0, 0.3);
+        }
+
+        .ui-overlay::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ui-overlay::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .ui-overlay::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 8px;
+        }
+
+        .button:hover {
+            background: #45a049;
+        }
+
+        .interview-timer {
+            font-size: 8px;
+            margin: 10px 0;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .notes-section {
+            margin-top: 15px;
+        }
+
+        .notes-input {
+            width: 100%;
+            height: 100px;
+            margin: 5px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 5px;
+            resize: vertical;
+        }
+
+        .progress-tracker {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #4CAF50;
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .stage-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .notes-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .note-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .timestamp {
+            color: #4CAF50;
+            font-size: 10px;
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+.recording-controls {
+    position: fixed;
+    bottom: 50px;
+    left: 20px;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px; /* Reduce padding to make it smaller */
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    width: 80px; /* Set the width for the square container */
+    height: 80px; /* Set the height for the square container */
+}
+
+.record-button {
+    width: 40px; /* Make the button smaller */
+    height: 40px; /* Make the button smaller */
+    border-radius: 50%;
+    background-color: #f44336;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 5px; /* Adjust margin to suit the smaller size */
+}
+
+.record-button.recording {
+    animation: pulse 1.5s infinite;
+}
+
+.record-button .inner {
+    width: 12px; /* Adjust size of inner circle */
+    height: 12px; /* Adjust size of inner circle */
+    background-color: white;
+    border-radius: 50%;
+}
+
+.record-button.recording .inner {
+    width: 12px; /* Adjust size of inner circle during recording */
+    height: 12px; /* Adjust size of inner circle during recording */
+    background-color: white;
+    border-radius: 3px;
+}
+
+.record-status {
+    font-size: 12px; /* Make the status text smaller */
+    text-align: center;
+}
+
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        }
+
+        /* Mobile styles */
+        @media (max-width: 600px) {
+            .ui-overlay {
+                top: 10px;
+                left: 10px;
+                max-width: 70%;
+                padding: 10px;
+            }
+
+            .button {
+                padding: 8px 16px;
+            }
+
+            .interview-timer {
+                font-size: 8px;
+            }
+
+            .notes-input {
+                height: 80px;
+            }
+
+            .progress-tracker {
+                padding: 8px;
+            }
+
+            .progress-bar {
+                height: 15px;
+            }
+
+            .stage-indicator {
+                font-size: 10px;
+            }
+
+            .recording-controls {
+                bottom: 10px;
+                right: 10px;
+                padding: 10px;
+            }
+
+            .record-button {
+                width: 50px;
+                height: 50px;
+            }
+
+            .record-button .inner {
+                width: 18px;
+                height: 18px;
+            }
+
+            .record-status {
+                font-size: 12px;
+            }
+        }
+
+        /* Tablet styles */
+        @media (min-width: 601px) and (max-width: 1024px) {
+            .ui-overlay {
+                top: 15px;
+                left: 15px;
+                max-width: 80%;
+                padding: 12px;
+            }
+
+            .button {
+                padding: 9px 18px;
+            }
+
+            .interview-timer {
+                font-size: 20px;
+            }
+
+            .notes-input {
+                height: 90px;
+            }
+
+            .progress-tracker {
+                padding: 9px;
+            }
+
+            .progress-bar {
+                height: 18px;
+            }
+
+            .recording-controls {
+                bottom: 15px;
+                right: 15px;
+                padding: 12px;
+            }
+
+            .record-button {
+                width: 55px;
+                height: 55px;
+            }
+
+            .record-button .inner {
+                width: 18px;
+                height: 18px;
+            }
+
+            .record-status {
+                font-size: 13px;
+            }
+        }
+    </style>
+
+</head>
+<body>
+<div id="loading-screen">Loading Avatars...</div>
+
+<div class="ui-overlay">
+    <div class="left-column">
+        <h3>Interview Settings</h3>
+        <div id="sessionInfo">Current Level: Entry Level | Interviewers: 2</div>
+        <button class="button" onclick="setLevel(1)">Entry Level (2 interviewers)</button>
+        <button class="button" onclick="setLevel(2)">Mid Level (3 interviewers)</button>
+        <button class="button" onclick="setLevel(3)">Senior Level (4 interviewers)</button>
+
+        <div class="interview-timer">
+            <div id="timer">00:00:00</div>
+            <div class="timer-controls">
+                <button class="button" onclick="startTimer()">Start</button>
+                <button class="button" onclick="pauseTimer()">Pause</button>
+                <button class="button" onclick="resetTimer()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-column">
+        <h4>Interviewer Interactions</h4>
+        <button class="button" onclick="triggerGroupGesture('raise_hands')">Raise Hands</button>
+        <button class="button" onclick="triggerGroupGesture('applaud')">Applaud</button>
+        <button class="button" onclick="triggerGroupGesture('reset')">Reset Pose</button>
+    </div>
+</div>
+
+<a-scene xr="optional-features: hit-test; microphon; vr-mode-ui: false">
+    <a-entity environment="preset: default;
+                          groundColor: #e0e0e0;
+                          groundColor2: #d0d0d0;
+                          groundTexture: squares;
+                          groundYScale: 10;
+                          grid: 1.5x1.5;
+                          gridColor: #ccc;
+                          skyType: gradient;
+                          skyColor: #cef;
+                          horizonColor: #eef;
+                          lighting: distant;
+                          lightPosition: 1 2 -2;
+                          shadow: true;
+                          shadowSize: 10;
+                          dressing: none;
+                          fog: 0.2;
+                          flatShading: false;
+                          playArea: 1;"></a-entity>
+    <a-entity id="room">
+        <!-- Room walls -->
+        <a-box position="-4 2 0" scale="0.1 4 8" color="#b4cfd1"></a-box>
+        <a-box position="4 2 0" scale="0.1 4 8" color="#b4cfd1"></a-box>
+        <a-box position="0 2 -4" scale="8 4 0.1" color="#386678"></a-box>
+        <a-box position="0 2 4" scale="8 4 0.1" color="#F9CFB4"></a-box>
+
+        <!-- Table -->
+        <a-box position="0 0.9 -1.5" scale="3 0.1 1.2" color="#281b0d"></a-box>
+
+        <a-box position="-1.4 0.45 -1.9" scale="0.1 0.9 0.1" color="#281b0d"></a-box>
+        <a-box position="1.4 0.45 -1.9" scale="0.1 0.9 0.1" color="#281b0d"></a-box>
+        <a-box position="-1.4 0.45 -1.1" scale="0.1 0.9 0.1" color="#281b0d"></a-box>
+        <a-box position="1.4 0.45 -1.1" scale="0.1 0.9 0.1" color="#281b0d"></a-box>
+
+        <!-- Candidate chair -->
+        <a-entity id="candidate-chair" position="0 0 2">
+            <a-box position="0 0.5 0" scale="0.5 0.1 0.5" color="#281b0d"></a-box>
+            <a-box position="0 1 0.25" scale="0.5 1 0.1" color="#281b0d"></a-box>
+        </a-entity>
+
+        <a-entity id="interviewer-chairs"></a-entity>
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-entity light="type: ambient; intensity: 0.7"></a-entity>
+    <a-entity light="type: directional; intensity: 0.5; position: 1 1 1"></a-entity>
+    <a-entity light="type: point; intensity: 0.3; position: 0 3 0"></a-entity>
+
+    <!-- Camera -->
+    <a-entity id="rig" position="0 0.5 2">
+        <a-camera look-controls wasd-controls>
+            <a-cursor color="#FFFFFF"></a-cursor>
+        </a-camera>
+    </a-entity>
+
+    <a-entity id="interviewerContainer"></a-entity>
+</a-scene>
+
+<script>
+    // Updated avatar models with fallback options
+   const avatarModels = [
+{
+    url: "https://models.readyplayer.me/67aa58cd50334a8afc1e27f8.glb",
+    fallback: "ready-player-me-harry-potter/source/harry.glb"
+},
+{
+    url: "ready-player-me-harry-potter/source/harry.glb",
+    fallback: "https://models.readyplayer.me/67aa58cd50334a8afc1e27f8.glb"
+}
+];
+
+    let loadedModels = 0;
+    const totalModels = avatarModels.length;
+
+    const animations = {
+        raise_hands: {
+            leftArm: { x: 270, y: -90, z: 0 },
+            rightArm: { x: 60, y: 0, z: 0 },
+            duration: 1000
+        },
+        applaud: {
+            leftArm: { x: 90, y: 0, z: 10 },
+            rightArm: { x: 90, y: 0, z: -10 },
+            duration: 300,
+            next: 'clapClose'
+        },
+        clapClose: {
+            leftArm: { x: 90, y: 0, z: 5 },
+            rightArm: { x: 90, y: 0, z: -5 },
+            duration: 200,
+            next: 'clapOpen'
+        },
+        clapOpen: {
+            leftArm: { x: 90, y: 0, z: 25 },
+            rightArm: { x: 90, y: 0, z: -25 },
+            duration: 200,
+            next: 'clapClose'
+        },
+        reset: {
+            leftArm: { x: 60, y: 0, z: 0 },
+            rightArm: { x: 60, y: 0, z: 0 },
+            duration: 1000
+        }
+    };
+
+    AFRAME.registerComponent('interviewer-animation', {
+        init: function() {
+            this.el.addEventListener('model-loaded', () => {
+                this.model = this.el.getObject3D('mesh');
+                this.leftArm = this.model.getObjectByName('LeftArm');
+                this.rightArm = this.model.getObjectByName('RightArm');
+                loadedModels++;
+                if (loadedModels === totalModels) {
+                    document.getElementById('loading-screen').style.display = 'none';
+                }
+            });
+        },
+        animate: function(animationName) {
+            const anim = animations[animationName];
+            if (anim && this.leftArm && this.rightArm) {
+                this.leftArm.rotation.set(
+                    THREE.MathUtils.degToRad(anim.leftArm.x),
+                    THREE.MathUtils.degToRad(anim.leftArm.y),
+                    THREE.MathUtils.degToRad(anim.leftArm.z)
+                );
+                this.rightArm.rotation.set(
+                    THREE.MathUtils.degToRad(anim.rightArm.x),
+                    THREE.MathUtils.degToRad(anim.rightArm.y),
+                    THREE.MathUtils.degToRad(anim.rightArm.z)
+                );
+                if (anim.duration) {
+                    setTimeout(() => {
+                        if (anim.next) {
+                            this.animate(anim.next);
+                        }
+                    }, anim.duration);
+                }
+            }
+        },
+        stopAnimation: function() {
+            clearInterval(this.repeatInterval);
+            this.repeatInterval = null;
+        },
+        reset: function() {
+            this.stopAnimation();
+            if (this.leftArm && this.rightArm) {
+                const resetAnim = animations.reset;
+                this.leftArm.rotation.set(
+                    THREE.MathUtils.degToRad(resetAnim.leftArm.x),
+                    THREE.MathUtils.degToRad(resetAnim.leftArm.y),
+                    THREE.MathUtils.degToRad(resetAnim.leftArm.z)
+                );
+                this.rightArm.rotation.set(
+                    THREE.MathUtils.degToRad(resetAnim.rightArm.x),
+                    THREE.MathUtils.degToRad(resetAnim.rightArm.y),
+                    THREE.MathUtils.degToRad(resetAnim.rightArm.z)
+                );
+            }
+        }
+    });
+
+    function createInterviewerChair(position) {
+const chair = document.createElement('a-entity');
+chair.innerHTML = `
+    <a-box position="${position.x} 0.5 ${position.z}" scale="0.5 0.1 0.5" color="#281b0d"></a-box>
+    <a-box position="${position.x} 1 ${position.z - 0.25}" scale="0.5 1 0.1" color="#281b0d"></a-box>
+`;
+return chair;
+}
+
+    function calculateInterviewerPosition(index, total) {
+const tableWidth = 2.5;
+const spacing = tableWidth / (total - 1);
+const x = (index - (total - 1) / 2) * spacing;
+const z = -3;
+return { x, z, rotationY: 0 };
+}
+
+    function createInterviewer(index, total) {
+const position = calculateInterviewerPosition(index, total);
+const entity = document.createElement('a-entity');
+const chairEntity = createInterviewerChair(position);
+
+const selectedModel = avatarModels[Math.floor(Math.random() * avatarModels.length)];
+entity.setAttribute('gltf-model', selectedModel.url);
+entity.setAttribute('scale', '1 1 1');
+entity.setAttribute('animation-mixer', '');
+entity.setAttribute('position', `${position.x} 0 ${position.z}`);
+entity.setAttribute('rotation', `0 ${position.rotationY} 0`);
+entity.setAttribute('interviewer-animation', '');
+
+entity.addEventListener('model-error', function(error) {
+    console.log('Model failed to load, trying fallback...', error);
+    entity.setAttribute('gltf-model', selectedModel.fallback);
+});
+
+entity.addEventListener('model-loaded', function() {
+    console.log('Model loaded successfully');
+});
+
+const chairContainer = document.getElementById('interviewer-chairs');
+chairContainer.appendChild(chairEntity);
+
+return entity;
+}
+
+    function triggerGroupGesture(gestureName) {
+        clearInterval(window.applaudInterval);
+        const allInterviewers = document.querySelectorAll('[interviewer-animation]');
+        const selectedInterviewers = Array.from(allInterviewers).filter(() => Math.random() < 0.5);
+
+        allInterviewers.forEach(interviewer => {
+            const animComp = interviewer.components['interviewer-animation'];
+            if (animComp) {
+                animComp.stopAnimation();
+            }
+        });
+
+        if (gestureName === 'reset') {
+            allInterviewers.forEach(interviewer => {
+                const animComp = interviewer.components['interviewer-animation'];
+                if (animComp) {
+                    animComp.reset();
+                }
+            });
+            return;
+        }
+
+        selectedInterviewers.forEach(interviewer => {
+            const animComp = interviewer.components['interviewer-animation'];
+            if (animComp) {
+                animComp.animate(gestureName);
+            }
+        });
+
+        if (gestureName === 'applaud') {
+            window.applaudInterval = setInterval(() => {
+                selectedInterviewers.forEach(interviewer => {
+                    const animComp = interviewer.components['interviewer-animation'];
+                    if (animComp) {
+                        animComp.animate('clapClose');
+                        setTimeout(() => {
+                            animComp.animate('clapOpen');
+                        }, 200);
+                    }
+                });
+            }, 500);
+        }
+    }
+
+    function setLevel(level) {
+        const container = document.getElementById('interviewerContainer');
+        const chairContainer = document.getElementById('interviewer-chairs');
+        container.innerHTML = '';
+        chairContainer.innerHTML = '';
+
+        const count = { 1: 2, 2: 3, 3: 4 }[level];
+        const levelNames = { 1: "Entry Level", 2: "Mid Level", 3: "Senior Level" };
+
+        for (let i = 0; i < count; i++) {
+            container.appendChild(createInterviewer(i, count));
+        }
+
+        document.getElementById('sessionInfo').textContent = `Current Level: ${levelNames[level]} | Interviewers: ${count}`;
+
+    }
+
+    // Timer functionality
+    let timerInterval;
+    let seconds = 0;
+    let timerRunning = false;
+    let currentStageIndex = 0;
+    const stages = ['Introduction', 'Questions', 'Closing'];
+
+    function updateTimer() {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        document.getElementById('timer').textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+        if (!timerRunning) {
+            timerRunning = true;
+            timerInterval = setInterval(() => {
+                seconds++;
+                updateTimer();
+                updateProgress();
+            }, 1000);
+        }
+    }
+
+    function pauseTimer() {
+        timerRunning = false;
+        clearInterval(timerInterval);
+    }
+
+    function resetTimer() {
+        pauseTimer();
+        seconds = 0;
+        updateTimer();
+        currentStageIndex = 0;
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const totalDuration = 3600; // 1 hour total
+        const progress = (seconds / totalDuration) * 100;
+        document.getElementById('progressBar').style.width = `${Math.min(progress, 100)}%`;
+
+        // Update stage based on progress
+        const newStageIndex = Math.floor((progress / 100) * stages.length);
+        if (newStageIndex !== currentStageIndex && newStageIndex < stages.length) {
+            currentStageIndex = newStageIndex;
+            ddocument.getElementById('currentStage').textContent = `Current Stage: ${stages[currentStageIndex]}`;
+        }
+    }
+
+    // Initialize everything
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            setLevel(1);
+            updateTimer();
+            updateNotesList();
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    saveNote();
+                }
+            });
+
+            // Error handling for scene loading
+            const scene = document.querySelector('a-scene');
+            scene.addEventListener('loaded', function() {
+                console.log('VR scene loaded successfully');
+            });
+
+            scene.addEventListener('error', function(error) {
+                console.error('Error loading VR scene:', error);
+                alert('There was an error loading the VR environment. Please refresh the page.');
+            });
+
+        } catch (error) {
+            console.error('Initialization error:', error);
+            alert('There was an error initializing the interview environment. Please refresh the page.');
+        }
+    });
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordingStartTime;
+    let audioBlob;
+    let audioURL;
+
+    const recordButton = document.getElementById('recordButton');
+    const recordStatus = document.getElementById('recordStatus');
+
+
+// Replace the setupAudioRecording function in interview.html with this improved version:
+
+async function setupAudioRecording() {
+    try {
+        console.log("Attempting to access microphone...");
+
+        // Check if mediaDevices API is available
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("MediaDevices API not supported in this browser");
+        }
+
+        // Be explicit about constraints
+        const constraints = {
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log("Microphone access granted!", stream);
+
+        // Create MediaRecorder with options
+        const options = { mimeType: 'audio/webm' }; // More widely supported than WAV
+
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } catch (e) {
+            console.warn("MediaRecorder with specified options failed, trying default options");
+            mediaRecorder = new MediaRecorder(stream);
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                audioChunks.push(event.data);
+                console.log("Audio data chunk received:", event.data.size, "bytes");
+            }
+        };
+
+        mediaRecorder.onerror = (event) => {
+            console.error("MediaRecorder error:", event.error);
+            recordStatus.textContent = "Recording error occurred";
+        };
+
+        mediaRecorder.onstop = () => {
+            const recordingDuration = (Date.now() - recordingStartTime) / 1000;
+
+            console.log("Recording stopped, processing audio chunks...");
+            console.log("Total chunks:", audioChunks.length);
+
+            if (audioChunks.length === 0) {
+                recordStatus.textContent = "Error: No audio data captured";
+                return;
+            }
+
+            // Create audio file - WebM is more widely supported in WebViews
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioURL = URL.createObjectURL(audioBlob);
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `interview_recording_${timestamp}.webm`;
+
+            // Create download link and trigger download
+            saveRecording(audioBlob, filename);
+
+            // Reset for next recording
+            audioChunks = [];
+            recordStatus.textContent = `Recording saved: ${filename} (${recordingDuration.toFixed(1)}s)`;
+        };
+
+        console.log("Audio recording initialized successfully");
+        recordStatus.textContent = "Ready to record";
+        recordButton.disabled = false;
+
+    } catch (err) {
+        console.error("Microphone access error:", err.name, err.message);
+        recordStatus.textContent = `Error: ${err.message}`;
+        recordButton.disabled = true;
+
+        // Display error details in the UI for debugging
+        const errorDiv = document.createElement('div');
+        errorDiv.style.color = 'red';
+        errorDiv.style.padding = '10px';
+        errorDiv.style.marginTop = '10px';
+        errorDiv.innerHTML = `<strong>Microphone Error Details:</strong><br>
+                             Name: ${err.name}<br>
+                             Message: ${err.message}<br>
+                             Please check browser permissions`;
+
+        document.querySelector('.recording-controls').appendChild(errorDiv);
+    }
+}
+
+<!--    // Set up audio recording-->
+<!--    async function setupAudioRecording() {-->
+<!--        try {-->
+<!--            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });-->
+
+<!--            mediaRecorder = new MediaRecorder(stream);-->
+
+<!--            mediaRecorder.ondataavailable = (event) => {-->
+<!--                if (event.data.size > 0) {-->
+<!--                    audioChunks.push(event.data);-->
+<!--                }-->
+<!--            };-->
+
+<!--            mediaRecorder.onstop = () => {-->
+<!--                const recordingDuration = (Date.now() - recordingStartTime) / 1000;-->
+
+<!--                // Create WAV file-->
+<!--                audioBlob = new Blob(audioChunks, { type: 'audio/wav' });-->
+<!--                audioURL = URL.createObjectURL(audioBlob);-->
+
+<!--                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');-->
+<!--                const filename = `interview_recording_${timestamp}.wav`;-->
+
+
+
+<!--                // Create download link-->
+<!--                saveRecording(audioBlob, filename);-->
+
+<!--                // Reset for next recording-->
+<!--                audioChunks = [];-->
+<!--                recordStatus.textContent = `Recording saved: ${filename} (${recordingDuration.toFixed(1)}s)`;-->
+
+<!--                // Send to emotion detection API (you'll implement this later)-->
+<!--                // sendForEmotionAnalysis(audioBlob);-->
+<!--            };-->
+
+<!--            console.log("Audio recording initialized successfully");-->
+<!--            recordStatus.textContent = "Ready to record";-->
+
+<!--        } catch (err) {-->
+<!--              /* console.error="Unexpected error:", error */-->
+<!--            recordStatus.textContent = "Error: Can\'t access microphone"-->
+<!--            recordButton.disabled = true-->
+<!--        }-->
+<!--    }-->
+
+<!--    // Toggle recording-->
+<!--    function toggleRecording() {-->
+<!--        if (!isRecording) {-->
+<!--            // Start recording-->
+<!--            audioChunks = [];-->
+<!--            mediaRecorder.start();-->
+<!--            recordingStartTime = Date.now();-->
+<!--            isRecording = true;-->
+
+<!--            recordButton.classList.add('recording');-->
+<!--            recordStatus.textContent = "Recording...";-->
+
+<!--            // Optional: Add visual indicator in VR scene-->
+<!--            addRecordingIndicator();-->
+<!--        } else {-->
+<!--            // Stop recording-->
+<!--            mediaRecorder.stop();-->
+<!--            isRecording = false;-->
+
+<!--            recordButton.classList.remove('recording');-->
+<!--            recordStatus.textContent = "Processing...";-->
+
+<!--            // Optional: Remove visual indicator from VR scene-->
+<!--            removeRecordingIndicator();-->
+<!--        }-->
+<!--    }-->
+
+function toggleRecording() {
+    if (!isRecording) {
+        try {
+            // Start recording
+            audioChunks = [];
+            mediaRecorder.start(1000); // Record in 1-second chunks for better reliability
+            recordingStartTime = Date.now();
+            isRecording = true;
+
+            recordButton.classList.add('recording');
+            recordStatus.textContent = "Recording...";
+
+            // Add visual indicator in VR scene
+            addRecordingIndicator();
+            console.log("Recording started");
+        } catch (err) {
+            console.error("Error starting recording:", err);
+            recordStatus.textContent = "Error starting recording";
+        }
+    } else {
+        try {
+            // Stop recording
+            mediaRecorder.stop();
+            isRecording = false;
+
+            recordButton.classList.remove('recording');
+            recordStatus.textContent = "Processing...";
+
+            // Remove visual indicator from VR scene
+            removeRecordingIndicator();
+            console.log("Recording stopped");
+        } catch (err) {
+            console.error("Error stopping recording:", err);
+            recordStatus.textContent = "Error stopping recording";
+        }
+    }
+}
+
+    // Save recording as WAV file
+    function saveRecording(blob, filename) {
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = filename;
+
+        // Programmatically click the link to trigger download
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        console.log(`Recording saved as ${filename}`);
+
+    }
+
+    // Add visual recording indicator in VR scene
+    function addRecordingIndicator() {
+        const scene = document.querySelector('a-scene');
+        const indicator = document.createElement('a-entity');
+
+        indicator.setAttribute('id', 'recording-indicator');
+        indicator.setAttribute('geometry', 'primitive: sphere; radius: 0.05');
+        indicator.setAttribute('material', 'color: red; shader: flat; opacity: 0.7');
+        indicator.setAttribute('position', '0 0.1 -0.5');
+        indicator.setAttribute('animation', 'property: scale; from: 1 1 1; to: 1.2 1.2 1.2; dur: 1000; dir: alternate; loop: true');
+
+        // Attach to camera
+        const camera = document.querySelector('a-camera');
+        camera.appendChild(indicator);
+    }
+
+    // Remove recording indicator
+    function removeRecordingIndicator() {
+        const indicator = document.getElementById('recording-indicator');
+        if (indicator) {
+            indicator.parentNode.removeChild(indicator);
+        }
+    }
+
+    // Add event listeners after DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            // Your existing initialization code
+
+            // Initialize audio recording
+            setupAudioRecording();
+
+            // Add event listener to record button
+            recordButton.addEventListener('click', toggleRecording);
+
+        } catch (error) {
+            console.error('Initialization error:', error);
+            alert('There was an error initializing the audio recording. Please refresh the page.');
+        }
+    });
+
+    // Future function for emotion analysis integration
+    function sendForEmotionAnalysis(audioBlob) {
+        // This will be implemented when you connect to your emotion analysis system
+        console.log("Audio ready for emotion analysis");
+
+        // Example implementation placeholder:
+        /*
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+
+        fetch('/analyze-emotion', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Emotion analysis results:", data);
+            // Update VR scene based on detected emotions
+            updateSceneBasedOnEmotions(data);
+        })
+        .catch(error => {
+            console.error("Error analyzing emotions:", error);
+        });
+        */
+    }
+
+    // Update VR scene based on emotions (placeholder)
+    function updateSceneBasedOnEmotions(emotionData) {
+        // This will update the VR scene based on detected emotions
+        // Example: change lighting, trigger avatar reactions, etc.
+    }
+</script>
+</body>
+</html>
+
+
+
+
