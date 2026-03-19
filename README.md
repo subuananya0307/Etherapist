@@ -105,7 +105,7 @@ The Flask API runs on `http://localhost:6000` and serves real-time severity pred
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Etherapist/
@@ -122,7 +122,7 @@ Etherapist/
 
 ---
 
-## 🔁 System Workflow
+## System Workflow
 
 ```
 User fills HAM-A Questionnaire
@@ -146,8 +146,3 @@ Progress tracked → Dashboard updated → Treatment adjusted
 eTherapist is **not a substitute for professional mental health care**. The system includes a mandatory doctor validation step before therapy begins. If you or someone you know is in crisis, please contact a qualified mental health professional or a crisis helpline in your region.
 
 ---
----
-
-## 📄 License
-
-This project is open source. Feel free to fork and build upon it!
